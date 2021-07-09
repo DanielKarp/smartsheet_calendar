@@ -1,12 +1,44 @@
 from re import match
 from itertools import cycle
+import logging
 
 import smartsheet
+
+fmt_str = '%(levelname)s:%(asctime)s:%(name)s: %(message)s'
+formatter = logging.Formatter(fmt_str)
+
+# logging.basicConfig(filename='api_and_calendar.log', level=logging.INFO, format=fmt_str)
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+d_file_handler = logging.FileHandler('api_and_calendar.log')
+d_file_handler.setLevel(logging.DEBUG)
+d_file_handler.setFormatter(formatter)
+
+i_file_handler = logging.FileHandler('calendar.log')
+i_file_handler.setLevel(logging.INFO)
+i_file_handler.setFormatter(formatter)
+
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(logging.INFO)
+stream_handler.setFormatter(formatter)
+
+logger.addHandler(i_file_handler)
+logger.addHandler(d_file_handler)
+logger.addHandler(stream_handler)
+
+s_file_handler = logging.FileHandler('api_and_calendar.log')
+s_file_handler.setLevel(logging.INFO)
+s_file_handler.setFormatter(formatter)
+
+s_logger = logging.getLogger('smartsheet.smartsheet')
+s_logger.addHandler(d_file_handler)
+s_logger.setLevel(logging.DEBUG)
 
 
 smart = smartsheet.Smartsheet()  # use 'SMARTSHEET_ACCESS_TOKEN' env variable
 smart.errors_as_exceptions(True)
-
 CHANGE_AGENT = 'dkarpele_smartsheet_calendar'
 smart.with_change_agent(CHANGE_AGENT)
 
@@ -24,15 +56,20 @@ color_cycle = cycle(COLOR_INDEX)
 
 def process_sheet(sheet_id):
     new_cells = []
-    col_map = column_name_to_id_map(sheet_id=sheet_id)
-    rows = smart.Sheets.get_sheet(sheet_id).rows
-    date_cols = [c for c in smart.Sheets.get_columns(sheet_id=sheet_id, include_all=True).data if c.type == 'DATE']
-
-    print(f'found {len(rows)} rows')
+    sheet = smart.Sheets.get_sheet(sheet_id)
+    rows = sheet.rows
+    columns = sheet.columns
+    col_map = column_name_to_id_map(columns=columns)
+    date_cols = [col for col in columns if col.type == 'DATE']
+    logger.debug(f'found {len(columns)} total columns')
+    logger.debug(f'found {len(date_cols)} date-type columns')
+    logger.debug(f'found {len(rows)} rows')
     for row in rows:
         event = get_cell_by_column_name(row, "Event Name", col_map).value
         if match(r'^Q[1-4] FY\d{2}', event):  # if the row matches, it is a label row. Contains no data so it's skipped
+            logger.debug(f'{event} was identified as a separator row')
             continue
+        logger.debug(f'{event} is being processed')
         color = next(color_cycle)  # each event gets its own color
         event = replace_event_names(event)  # do some filtering to shorten some words
 
@@ -41,31 +78,35 @@ def process_sheet(sheet_id):
             date = row.get_column(date_col.id).value
             new_cells.append((name, date, color))
 
-    clear_rows(CALENDAR_SHEET)
-    write_rows(CALENDAR_SHEET, new_cells)
+    cal_sheet = smart.Sheets.get_sheet(CALENDAR_SHEET)
+    clear_rows(cal_sheet)
+    write_rows(cal_sheet, new_cells)
 
 
 def replace_event_names(event: str) -> str:
-    if 'Cisco Live' in event:
-        event = event.replace('Cisco Live', 'CL')
-    if 'Cisco' in event:
-        event = event.replace('Cisco ', '')
+    replacements = [('Cisco Live', 'CL'),
+                    ('Cisco ', ''),
+                    ]
+    for original, new in replacements:
+        if original in event:
+            logger.debug(f'found "{original}" in {event}, replaced with "{new}"')
+            event = event.replace(original, new)
     return event
 
 
-def clear_rows(sheet_id: int):
-    rows = [row.id for row in smart.Sheets.get_sheet(sheet_id).rows]
+def clear_rows(sheet: smartsheet.models.Sheet):
+    rows = [row.id for row in sheet.rows]
     if rows:
-        smart.Sheets.delete_rows(sheet_id=sheet_id, ids=rows)
-        print(f'cleared {len(rows)} rows')
+        smart.Sheets.delete_rows(sheet_id=sheet.id, ids=rows)
+        logger.info(f'cleared {len(rows)} rows')
     else:
-        print('no rows cleared')
+        logger.warning('no rows cleared')
 
 
-def write_rows(sheet_id: int,
+def write_rows(sheet: smartsheet.models.Sheet,
                rows: list):
     new_rows = []
-    col1, col2 = [col.id for col in smart.Sheets.get_columns(sheet_id=sheet_id, include_all=True).data][:2]
+    col1, col2 = [col.id for col in sheet.columns[:2]]
     for name, date, color in rows:
         if name and date:
             new_row = smartsheet.models.Row()
@@ -84,10 +125,10 @@ def write_rows(sheet_id: int,
             new_row.cells = [new_cell1, new_cell2]
             new_rows.append(new_row)
     if new_rows:
-        smart.Sheets.add_rows(sheet_id, new_rows)
-        print(f'wrote {len(new_rows)} rows')
+        smart.Sheets.add_rows(sheet.id, new_rows)
+        logger.info(f'wrote {len(new_rows)} rows')
     else:
-        print('no rows written')
+        logger.warning('no rows written')
 
 
 def get_cell_by_column_name(row: smartsheet.models.Row,
@@ -96,10 +137,12 @@ def get_cell_by_column_name(row: smartsheet.models.Row,
     return row.get_column(col_map[column_name])  # {NAME: ID}
 
 
-def column_name_to_id_map(sheet_id: int) -> dict:
+def column_name_to_id_map(columns: list) -> dict:
     # returns a title:id dict of all columns in sheet
-    return {column.title: column.id for column in smart.Sheets.get_columns(sheet_id, include_all=True).data}
+    return {column.title: column.id for column in columns}
 
 
 if __name__ == '__main__':
+    logger.info('starting program')
     process_sheet(INTAKE_FORM_SHEET)
+    logger.info('program finished\n')
