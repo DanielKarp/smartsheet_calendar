@@ -92,8 +92,7 @@ def replace_event_names(event: str) -> str:
 
 
 def clear_rows(sheet: smartsheet.models.Sheet):
-    rows = [row.id for row in sheet.rows]
-    if rows:
+    if rows := [row.id for row in sheet.rows]:
         smart.Sheets.delete_rows(sheet_id=sheet.id, ids=rows)
         logger.info(f'cleared {len(rows)} rows')
     else:
