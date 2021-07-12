@@ -42,7 +42,7 @@ smart.errors_as_exceptions(True)
 CHANGE_AGENT = 'dkarpele_smartsheet_calendar'
 smart.with_change_agent(CHANGE_AGENT)
 
-INTAKE_FORM_SHEET = 7774724450215812
+INTAKE_FORM_SHEET = 3901696217769860
 CALENDAR_SHEET = 4620060233885572
 
 COLORS = ["none", "#000000", "#FFFFFF", "transparent",
