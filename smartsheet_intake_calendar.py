@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from re import match
 from itertools import cycle
 import logging
