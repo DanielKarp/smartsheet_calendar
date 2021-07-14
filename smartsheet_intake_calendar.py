@@ -83,6 +83,7 @@ def process_sheet(sheet_id):
 def replace_event_names(event: str) -> str:
     replacements = [('Cisco Live', 'CL'),
                     ('Cisco ', ''),
+                    ('Partner Summit', 'PS'),
                     ]
     for original, new in replacements:
         if original in event:
