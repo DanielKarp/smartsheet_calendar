@@ -1,15 +1,29 @@
+<<<<<<< HEAD
 #!/usr/bin/env python3
 
 from re import match
 from itertools import cycle
+=======
+>>>>>>> 81f700e590ab6f0b5d31ce43f4e6e969d315808b
 import logging
+from itertools import cycle
+from re import match
 
 import smartsheet
 
+INTAKE_FORM_SHEET = 3901696217769860
+CALENDAR_SHEET = 4620060233885572
+
+COLORS = ["none", "#000000", "#FFFFFF", "transparent",
+          "#FFEBEE", "#FFF3DF", "#FFFEE6", "#E7F5E9", "#E2F2FE", "#F4E4F5", "#F2E8DE", "#FFCCD2", "#FFE1AF", "#FEFF85",
+          "#C6E7C8", "#B9DDFC", "#EBC7EF", "#EEDCCA", "#E5E5E5", "#F87E7D", "#FFCD7A", "#FEFF00", "#7ED085", "#5FB3F9",
+          "#D190DA", "#D0AF8F", "#BDBDBD", "#EA352E", "#FF8D00", "#FFED00", "#40B14B", "#1061C3", "#9210AD", "#974C00",
+          "#757575", "#991310", "#EA5000", "#EBC700", "#237F2E", "#0B347D", "#61058B", "#592C00"]
+COLOR_INDEX = list([i for i, _ in enumerate(COLORS)][4:])
+color_cycle = cycle(COLOR_INDEX)
+
 fmt_str = '%(levelname)s:%(asctime)s:%(name)s: %(message)s'
 formatter = logging.Formatter(fmt_str)
-
-# logging.basicConfig(filename='api_and_calendar.log', level=logging.INFO, format=fmt_str)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -38,22 +52,10 @@ s_logger = logging.getLogger('smartsheet.smartsheet')
 s_logger.addHandler(d_file_handler)
 s_logger.setLevel(logging.DEBUG)
 
-
 smart = smartsheet.Smartsheet()  # use 'SMARTSHEET_ACCESS_TOKEN' env variable
 smart.errors_as_exceptions(True)
 CHANGE_AGENT = 'dkarpele_smartsheet_calendar'
 smart.with_change_agent(CHANGE_AGENT)
-
-INTAKE_FORM_SHEET = 3901696217769860
-CALENDAR_SHEET = 4620060233885572
-
-COLORS = ["none", "#000000", "#FFFFFF", "transparent",
-          "#FFEBEE", "#FFF3DF", "#FFFEE6", "#E7F5E9", "#E2F2FE", "#F4E4F5", "#F2E8DE", "#FFCCD2", "#FFE1AF", "#FEFF85",
-          "#C6E7C8", "#B9DDFC", "#EBC7EF", "#EEDCCA", "#E5E5E5", "#F87E7D", "#FFCD7A", "#FEFF00", "#7ED085", "#5FB3F9",
-          "#D190DA", "#D0AF8F", "#BDBDBD", "#EA352E", "#FF8D00", "#FFED00", "#40B14B", "#1061C3", "#9210AD", "#974C00",
-          "#757575", "#991310", "#EA5000", "#EBC700", "#237F2E", "#0B347D", "#61058B", "#592C00"]
-COLOR_INDEX = list([i for i, _ in enumerate(COLORS)][4:])
-color_cycle = cycle(COLOR_INDEX)
 
 
 def process_sheet(sheet_id):
@@ -88,6 +90,7 @@ def process_sheet(sheet_id):
 def replace_event_names(event: str) -> str:
     replacements = [('Cisco Live', 'CL'),
                     ('Cisco ', ''),
+                    ('Partner Summit', 'PS'),
                     ]
     for original, new in replacements:
         if original in event:
@@ -97,8 +100,7 @@ def replace_event_names(event: str) -> str:
 
 
 def clear_rows(sheet: smartsheet.models.Sheet):
-    rows = [row.id for row in sheet.rows]
-    if rows:
+    if rows := [row.id for row in sheet.rows]:
         smart.Sheets.delete_rows(sheet_id=sheet.id, ids=rows)
         logger.info(f'cleared {len(rows)} rows')
     else:
