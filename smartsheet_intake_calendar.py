@@ -1,10 +1,8 @@
-<<<<<<< HEAD
 #!/usr/bin/env python3
 
 from re import match
 from itertools import cycle
-=======
->>>>>>> 81f700e590ab6f0b5d31ce43f4e6e969d315808b
+
 import logging
 from itertools import cycle
 from re import match
