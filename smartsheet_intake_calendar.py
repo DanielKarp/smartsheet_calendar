@@ -73,7 +73,8 @@ def process_sheet(sheet_id):
         event = replace_event_names(event)  # do some filtering to shorten some words
 
         for date_col in date_cols:
-            name = f'{event} | {date_col.title}'
+            item = replace_event_names(date_col.title)
+            name = f'{event} | {item}'
             date = row.get_column(date_col.id).value
             new_cells.append((name, date, color))
 
@@ -86,11 +87,13 @@ def replace_event_names(event: str) -> str:
     replacements = [('Cisco Live', 'CL'),
                     ('Cisco ', ''),
                     ('Partner Summit', 'PS'),
+                    ('Date', ''),
                     ]
     for original, new in replacements:
         if original in event:
-            logger.debug(f'found "{original}" in {event}, replaced with "{new}"')
-            event = event.replace(original, new)
+            new_event = event.replace(original, new)
+            logger.debug(f'found "{original}" in {event}, replaced with "{new}", result is {new_event}')
+            event = new_event
     return event
 
 
