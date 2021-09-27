@@ -52,7 +52,7 @@ COLORS = [
     "#0B347D",
     "#61058B",
     "#592C00",
-]
+    ]
 COLOR_INDEX = list([i for i, _ in enumerate(COLORS)][4:])
 color_cycle = cycle(COLOR_INDEX)
 
@@ -98,26 +98,33 @@ def process_sheet(sheet_id):
     rows = sheet.rows
     columns = sheet.columns
     col_map = column_name_to_id_map(columns=columns)
-    date_cols = [col for col in columns if col.type == "DATE"]
+    date_cols = [col for col in columns if
+                 col.type == "DATE" and col.title != "Event Start Date" and col.title != "Event End Date"]
     logger.debug(f"found {len(columns)} total columns")
     logger.debug(f"found {len(date_cols)} date-type columns")
     logger.debug(f"found {len(rows)} rows")
     for row in rows:
         event = get_cell_by_column_name(row, "Event Name", col_map).value
-        if match(
-            r"^Q[1-4] FY\d{2}", event
-        ):  # if the row matches, it is a label row. Contains no data so it's skipped
+        # if the row matches, it is a label row. Contains no data so it's skipped
+        if match(r"^Q[1-4] FY\d{2}", event):
             logger.debug(f"{event} was identified as a separator row")
             continue
         logger.debug(f"{event} is being processed")
         color = next(color_cycle)  # each event gets its own color
         event = replace_event_names(event)  # do some filtering to shorten some words
 
+        start_col = next(col for col in columns if col.title == "Event Start Date")
+        end_col = next(col for col in columns if col.title == "Event End Date")
+        name = event
+        start_date = row.get_column(start_col.id).value
+        end_date = row.get_column(end_col.id).value
+        new_cells.append((name, start_date, end_date, color))
+
         for date_col in date_cols:
             item = replace_event_names(date_col.title)
             name = f"{event} | {item}"
             date = row.get_column(date_col.id).value
-            new_cells.append((name, date, color))
+            new_cells.append((name, date, "", color))
 
     cal_sheet = smart.Sheets.get_sheet(CALENDAR_SHEET)
     clear_rows(cal_sheet)
@@ -130,13 +137,13 @@ def replace_event_names(event: str) -> str:
         ("Cisco ", ""),
         ("Partner Summit", "PS"),
         ("Date", ""),
-    ]
+        ]
     for original, new in replacements:
         if original in event:
             new_event = event.replace(original, new)
             logger.debug(
                 f'found "{original}" in {event}, replaced with "{new}", result is {new_event}'
-            )
+                )
             event = new_event
     return event
 
@@ -151,8 +158,8 @@ def clear_rows(sheet: smartsheet.models.Sheet):
 
 def write_rows(sheet: smartsheet.models.Sheet, rows: list):
     new_rows = []
-    col1, col2 = [col.id for col in sheet.columns[:2]]
-    for name, date, color in rows:
+    col1, col2, col3 = [col.id for col in sheet.columns[:3]]
+    for name, date, end_date, color in rows:
         if name and date:
             new_row = smartsheet.models.Row()
             new_row.to_bottom = True
@@ -167,7 +174,12 @@ def write_rows(sheet: smartsheet.models.Sheet, rows: list):
             new_cell2.value = date
             new_cell2.column_id = col2
 
-            new_row.cells = [new_cell1, new_cell2]
+            new_cell3 = smartsheet.models.Cell()
+            new_cell3.strict = False
+            new_cell3.value = end_date
+            new_cell3.column_id = col3
+
+            new_row.cells = [new_cell1, new_cell2, new_cell3]
             new_rows.append(new_row)
     if new_rows:
         smart.Sheets.add_rows(sheet.id, new_rows)
@@ -177,8 +189,8 @@ def write_rows(sheet: smartsheet.models.Sheet, rows: list):
 
 
 def get_cell_by_column_name(
-    row: smartsheet.models.Row, column_name: str, col_map: dict
-) -> smartsheet.models.Cell:
+        row: smartsheet.models.Row, column_name: str, col_map: dict
+        ) -> smartsheet.models.Cell:
     return row.get_column(col_map[column_name])  # {NAME: ID}
 
 
