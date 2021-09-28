@@ -98,8 +98,13 @@ def process_sheet(sheet_id):
     rows = sheet.rows
     columns = sheet.columns
     col_map = column_name_to_id_map(columns=columns)
-    date_cols = [col for col in columns if
-                 col.type == "DATE" and col.title != "Event Start Date" and col.title != "Event End Date"]
+    date_cols = [
+        col
+        for col in columns
+        if col.type == "DATE"
+           and col.title != "Event Start Date"
+           and col.title != "Event End Date"
+        ]
     logger.debug(f"found {len(columns)} total columns")
     logger.debug(f"found {len(date_cols)} date-type columns")
     logger.debug(f"found {len(rows)} rows")
