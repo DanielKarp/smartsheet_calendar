@@ -114,6 +114,9 @@ def process_sheet(sheet_id):
         if match(r"^Q[1-4] FY\d{2}", event):
             logger.debug(f"{event} was identified as a separator row")
             continue
+        if "Canceled" in get_cell_by_column_name(row, "Event State & Type", col_map).value:
+            logger.debug(f"{event} was identified as a canceled event")
+            event = " ".join(["(Canceled)", event])
         logger.debug(f"{event} is being processed")
         color = next(color_cycle)  # each event gets its own color
         event = replace_event_names(event)  # do some filtering to shorten some words
