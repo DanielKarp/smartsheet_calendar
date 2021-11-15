@@ -116,17 +116,16 @@ def process_sheet(sheet_id):
             continue
         if "Canceled" in get_cell_by_column_name(row, "Event State & Type", col_map).value:
             logger.debug(f"{event} was identified as a canceled event")
-            event = " ".join(["(Canceled)", event])
+            event = f'(Canceled) {event}'
         logger.debug(f"{event} is being processed")
         color = next(color_cycle)  # each event gets its own color
         event = replace_event_names(event)  # do some filtering to shorten some words
 
         start_col = next(col for col in columns if col.title == "Event Start Date")
         end_col = next(col for col in columns if col.title == "Event End Date")
-        name = event
         start_date = row.get_column(start_col.id).value
         end_date = row.get_column(end_col.id).value
-        new_cells.append((name, start_date, end_date, color))
+        new_cells.append((event, start_date, end_date, color))
 
         for date_col in date_cols:
             item = replace_event_names(date_col.title)
@@ -156,7 +155,7 @@ def replace_event_names(event: str) -> str:
     return event
 
 
-def clear_rows(sheet: smartsheet.models.Sheet):
+def clear_rows(sheet: smartsheet.models.Sheet) -> None:
     if rows := [row.id for row in sheet.rows]:
         smart.Sheets.delete_rows(sheet_id=sheet.id, ids=rows)
         logger.info(f"cleared {len(rows)} rows")
@@ -164,9 +163,9 @@ def clear_rows(sheet: smartsheet.models.Sheet):
         logger.warning("no rows cleared")
 
 
-def write_rows(sheet: smartsheet.models.Sheet, rows: list):
+def write_rows(sheet: smartsheet.models.Sheet, rows: list) -> None:
     new_rows = []
-    col1, col2, col3 = [col.id for col in sheet.columns[:3]]
+    name_col, date_col, end_date_col = [col.id for col in sheet.columns[:3]]
     for name, date, end_date, color in rows:
         if name and date:
             new_row = smartsheet.models.Row()
@@ -175,17 +174,17 @@ def write_rows(sheet: smartsheet.models.Sheet, rows: list):
 
             new_cell1 = smartsheet.models.Cell()
             new_cell1.value = name
-            new_cell1.column_id = col1
+            new_cell1.column_id = name_col
 
             new_cell2 = smartsheet.models.Cell()
             new_cell2.strict = False
             new_cell2.value = date
-            new_cell2.column_id = col2
+            new_cell2.column_id = date_col
 
             new_cell3 = smartsheet.models.Cell()
             new_cell3.strict = False
             new_cell3.value = end_date
-            new_cell3.column_id = col3
+            new_cell3.column_id = end_date_col
 
             new_row.cells = [new_cell1, new_cell2, new_cell3]
             new_rows.append(new_row)
