@@ -198,7 +198,7 @@ def write_rows(sheet: smartsheet.models.Sheet, rows: list) -> None:
 
 
 def get_cell_by_column_name(
-        row: smartsheet.models.Row, column_name: str, col_map: dict
+    row: smartsheet.models.Row, column_name: str, col_map: dict
 ) -> smartsheet.models.Cell:
     return row.get_column(col_map[column_name])  # {NAME: ID}
 
