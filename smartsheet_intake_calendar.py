@@ -52,7 +52,7 @@ COLORS = [
     "#0B347D",
     "#61058B",
     "#592C00",
-    ]
+]
 COLOR_INDEX = list([i for i, _ in enumerate(COLORS)][4:])
 color_cycle = cycle(COLOR_INDEX)
 
@@ -102,9 +102,10 @@ def process_sheet(sheet_id):
         col
         for col in columns
         if col.type == "DATE"
+           and not col.hidden
            and col.title != "Event Start Date"
            and col.title != "Event End Date"
-        ]
+    ]
     logger.debug(f"found {len(columns)} total columns")
     logger.debug(f"found {len(date_cols)} date-type columns")
     logger.debug(f"found {len(rows)} rows")
@@ -114,9 +115,10 @@ def process_sheet(sheet_id):
         if match(r"^Q[1-4] FY\d{2}", event):
             logger.debug(f"{event} was identified as a separator row")
             continue
-        if "Canceled" in get_cell_by_column_name(row, "Event State & Type", col_map).value:
-            logger.debug(f"{event} was identified as a canceled event")
-            event = f'(Canceled) {event}'
+        if event_state := get_cell_by_column_name(row, "Event State & Type", col_map).value:
+            if "Canceled" in event_state:
+                logger.debug(f"{event} was identified as a canceled event")
+                event = f'(Canceled) {event}'
         logger.debug(f"{event} is being processed")
         color = next(color_cycle)  # each event gets its own color
         event = replace_event_names(event)  # do some filtering to shorten some words
@@ -144,13 +146,13 @@ def replace_event_names(event: str) -> str:
         ("Cisco ", ""),
         ("Partner Summit", "PS"),
         ("Date", ""),
-        ]
+    ]
     for original, new in replacements:
         if original in event:
             new_event = event.replace(original, new)
             logger.debug(
                 f'found "{original}" in {event}, replaced with "{new}", result is {new_event}'
-                )
+            )
             event = new_event
     return event
 
@@ -197,7 +199,7 @@ def write_rows(sheet: smartsheet.models.Sheet, rows: list) -> None:
 
 def get_cell_by_column_name(
         row: smartsheet.models.Row, column_name: str, col_map: dict
-        ) -> smartsheet.models.Cell:
+) -> smartsheet.models.Cell:
     return row.get_column(col_map[column_name])  # {NAME: ID}
 
 
