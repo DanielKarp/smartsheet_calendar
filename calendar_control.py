@@ -1,7 +1,7 @@
 import logging
 
-from map_calendar import MAP_SHEET, process_sheet as process_map
-from smartsheet_intake_calendar import INTAKE_FORM_SHEET, process_sheet as process_intake
+from intake_calendar import process_sheet as process_intake
+from map_calendar import process_sheet as process_map
 
 fmt_str = "%(levelname)s:%(asctime)s:%(name)s: %(message)s"
 formatter = logging.Formatter(fmt_str)
@@ -37,9 +37,9 @@ s_logger.setLevel(logging.DEBUG)
 logger.info("starting control program")
 
 logger.info("starting intake calendar processing")
-process_intake(INTAKE_FORM_SHEET)
+process_intake()
 
 logger.info("starting map calendar processing")
-process_map(MAP_SHEET)
+process_map()
 
 logger.info("program finished\n")
