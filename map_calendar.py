@@ -94,9 +94,9 @@ CHANGE_AGENT = "dkarpele_smartsheet_calendar"
 smart.with_change_agent(CHANGE_AGENT)
 
 
-def process_sheet(sheet_id):
+def process_sheet():
     new_cells = []
-    sheet = smart.Sheets.get_sheet(sheet_id)
+    sheet = smart.Sheets.get_sheet(MAP_SHEET)
     rows = sheet.rows
     columns = sheet.columns
     col_map = column_name_to_id_map(columns=columns)
@@ -113,22 +113,20 @@ def process_sheet(sheet_id):
     logger.debug(f"found {len(rows)} rows")
     for row in rows:
         event = get_cell_by_column_name(row, "Show Name", col_map).display_value
-        # if the row matches, it is a label row. Contains no data so it's skipped
+        # if the row matches any of the below, it should not be added to the calendar
         if match(r"^Q[1-4]", str(event)) or not row.parent_id or event is None:
-            logger.debug(f"{event} was identified as a separator row")
+            logger.debug(f"{event} was identified as a non-event row")
             continue
-        staff = get_cell_by_column_name(row, "TechX Resource", col_map).value
-        if event_state := get_cell_by_column_name(row, "TechX Status", col_map).value and staff:
-            if event_state in ['Red', 'Yellow']:
-                logger.debug(f"{event} was identified as an unconfirmed event")
-                continue
-        else:
+        if get_cell_by_column_name(row, "TechX Status", col_map).value != 'Green':
+            logger.debug(f"{event} was identified as an unconfirmed event")
+            continue
+        if not (staff := get_cell_by_column_name(row, "TechX Resource", col_map).value):
+            logger.debug(f"{event} was identified as an event without anyone assigned")
             continue
 
         logger.debug(f"{event} is being processed")
         color = next(color_cycle)  # each event gets its own color
-        if staff.startswith('"') and staff.endswith('"'):
-            staff = staff.strip('"')
+        staff = staff.strip('"')
         event = f'{event} | {staff}'
 
         start_col = next(col for col in columns if col.title == "Event Start Date")
@@ -150,5 +148,5 @@ def process_sheet(sheet_id):
 
 if __name__ == "__main__":
     logger.info("starting program")
-    process_sheet(MAP_SHEET)
+    process_sheet()
     logger.info("program finished\n")

@@ -84,6 +84,9 @@ s_file_handler = logging.FileHandler("api_and_calendar.log")
 s_file_handler.setLevel(logging.INFO)
 s_file_handler.setFormatter(formatter)
 
+s_logger = logging.getLogger("smartsheet.smartsheet")
+s_logger.addHandler(d_file_handler)
+s_logger.setLevel(logging.DEBUG)
 
 smart = smartsheet.Smartsheet()  # use 'SMARTSHEET_ACCESS_TOKEN' env variable
 smart.errors_as_exceptions(True)
@@ -91,9 +94,9 @@ CHANGE_AGENT = "dkarpele_smartsheet_calendar"
 smart.with_change_agent(CHANGE_AGENT)
 
 
-def process_sheet(sheet_id):
+def process_sheet():
     new_cells = []
-    sheet = smart.Sheets.get_sheet(sheet_id)
+    sheet = smart.Sheets.get_sheet(INTAKE_FORM_SHEET)
     rows = sheet.rows
     columns = sheet.columns
     col_map = column_name_to_id_map(columns=columns)
@@ -114,10 +117,10 @@ def process_sheet(sheet_id):
         if match(r"^Q[1-4] FY\d{2}", event):
             logger.debug(f"{event} was identified as a separator row")
             continue
-        if event_state := get_cell_by_column_name(row, "Event State & Type", col_map).value:
-            if "Canceled" in event_state:
-                logger.debug(f"{event} was identified as a canceled event")
-                event = f'(Canceled) {event}'
+        event_state = get_cell_by_column_name(row, "Event State & Type", col_map).value
+        if event_state is not None and "Canceled" in event_state:
+            logger.debug(f"{event} was identified as a canceled event")
+            event = f'(Canceled) {event}'
         logger.debug(f"{event} is being processed")
         color = next(color_cycle)  # each event gets its own color
         event = replace_event_names(event)  # do some filtering to shorten some words
@@ -126,13 +129,13 @@ def process_sheet(sheet_id):
         end_col = next(col for col in columns if col.title == "Event End Date")
         start_date = row.get_column(start_col.id).value
         end_date = row.get_column(end_col.id).value
-        new_cells.append((event, start_date, end_date, color))
+        new_cells.append((event, start_date or "", end_date or "", color))
 
         for date_col in date_cols:
             item = replace_event_names(date_col.title)
             name = f"{event} | {item}"
             date = row.get_column(date_col.id).value
-            new_cells.append((name, date, "", color))
+            new_cells.append((name, date or "", "", color))
 
     cal_sheet = smart.Sheets.get_sheet(CALENDAR_SHEET)
     clear_rows(smart, cal_sheet)
@@ -141,5 +144,5 @@ def process_sheet(sheet_id):
 
 if __name__ == "__main__":
     logger.info("starting program")
-    process_sheet(INTAKE_FORM_SHEET)
+    process_sheet()
     logger.info("program finished\n")
