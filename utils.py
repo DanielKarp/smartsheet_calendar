@@ -24,6 +24,52 @@ logger.addHandler(i_file_handler)
 logger.addHandler(d_file_handler)
 logger.addHandler(stream_handler)
 
+COLORS = [
+    "none",
+    "#000000",
+    "#FFFFFF",
+    "transparent",
+    "#FFEBEE",
+    "#FFF3DF",
+    "#FFFEE6",
+    "#E7F5E9",
+    "#E2F2FE",
+    "#F4E4F5",
+    "#F2E8DE",
+    "#FFCCD2",
+    "#FFE1AF",
+    "#FEFF85",
+    "#C6E7C8",
+    "#B9DDFC",
+    "#EBC7EF",
+    "#EEDCCA",
+    "#E5E5E5",
+    "#F87E7D",
+    "#FFCD7A",
+    "#FEFF00",
+    "#7ED085",
+    "#5FB3F9",
+    "#D190DA",
+    "#D0AF8F",
+    "#BDBDBD",
+    "#EA352E",
+    "#FF8D00",
+    "#FFED00",
+    "#40B14B",
+    "#1061C3",
+    "#9210AD",
+    "#974C00",
+    "#757575",
+    "#991310",
+    "#EA5000",
+    "#EBC700",
+    "#237F2E",
+    "#0B347D",
+    "#61058B",
+    "#592C00",
+]
+COLOR_INDEX = list([i for i, _ in enumerate(COLORS)][4:])
+
 
 def replace_event_names(event: str) -> str:
     replacements = [
