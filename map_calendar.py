@@ -74,14 +74,15 @@ def process_sheet():
         if get_cell_by_column_name(row, "TechX Status", col_map).value != 'Green':
             logger.debug(f"{event} was identified as an unconfirmed event")
             continue
-        if not (staff := get_cell_by_column_name(row, "TechX Resource", col_map).value):
-            logger.debug(f"{event} was identified as an event without anyone assigned")
-            continue
 
         logger.debug(f"{event} is being processed")
         color = next(color_cycle)  # each event gets its own color
-        staff = staff.strip('"')
-        event = f'{event} | {staff}'
+
+        if staff := get_cell_by_column_name(row, "TechX Resource", col_map).value:
+            staff = staff.strip('"')
+            event = f'{event} | {staff}'
+        else:
+            logger.debug(f"{event} was identified as an event without anyone assigned")
 
         start_col = next(col for col in columns if col.title == "Event Start Date")
         end_col = next(col for col in columns if col.title == "Event End Date")
