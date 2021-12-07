@@ -2,6 +2,7 @@ import logging
 
 from intake_calendar import process_sheet as process_intake
 from map_calendar import process_sheet as process_map
+from combined_calendar import process_sheet as process_combined
 
 fmt_str = "%(levelname)s:%(asctime)s:%(name)s: %(message)s"
 formatter = logging.Formatter(fmt_str)
@@ -33,5 +34,8 @@ process_intake()
 
 logger.info("starting map calendar processing")
 process_map()
+
+logger.info("starting combined calendar processing")
+process_combined()
 
 logger.info("program finished\n")
