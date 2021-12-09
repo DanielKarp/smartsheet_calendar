@@ -16,7 +16,7 @@ CALENDAR_SHEET = 8959263235172228
 fmt_str = "%(levelname)s:%(asctime)s:%(name)s: %(message)s"
 formatter = logging.Formatter(fmt_str)
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 d_file_handler = logging.FileHandler("api_and_calendar.log")
