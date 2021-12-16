@@ -1,8 +1,9 @@
 import logging
 
+from combined_calendar import process_sheet as process_combined
 from intake_calendar import process_sheet as process_intake
 from map_calendar import process_sheet as process_map
-from combined_calendar import process_sheet as process_combined
+from request_to_map.request_to_map_calendar import process_sheet as process_request
 
 fmt_str = "%(levelname)s:%(asctime)s:%(name)s: %(message)s"
 formatter = logging.Formatter(fmt_str)
@@ -28,6 +29,9 @@ logger.addHandler(stream_handler)
 
 
 logger.info("starting control program")
+
+logger.info("starting request sheet to map calendar processing")
+process_request()
 
 logger.info("starting intake calendar processing")
 process_intake()
