@@ -29,13 +29,14 @@ YEARS_AND_QUARTERS = {
 
 
 def calc_fy_q_hardcoded(input_date):
+    last_year = max(YEARS_AND_QUARTERS.keys())
     input_date = datetime.strptime(input_date, '%Y-%m-%d').date()
     for year, quarters in YEARS_AND_QUARTERS.items():
         for quarter, time_range in quarters.items():
             if time_range[0] <= input_date <= time_range[1]:
                 return year, quarter
     else:
-        return 0, 0
+        return last_year + 1, 1  # if all else fails, return the next year after the last known year, Q1
 
 
 def print_quarters():

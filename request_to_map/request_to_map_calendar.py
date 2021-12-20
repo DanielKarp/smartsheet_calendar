@@ -1,5 +1,5 @@
 import argparse
-from datetime import datetime
+from datetime import date, datetime
 
 import smartsheet
 
@@ -260,17 +260,21 @@ def sort_quarter_rows(sheet_id: int,
                       new_row: smartsheet.models.Row,
                       col_map: dict) -> int:
     rows_in_quarter = find_child_rows(sheet_id, quarter_row_id)
-    new_row_start_date = datetime.strptime(get_cell_by_column_name(new_row,
-                                                                   'Event Start Date',
-                                                                   col_map).value,
-                                           '%Y-%m-%d').date()
+    new_row_start_date = get_start_date(new_row, col_map)
     for row in rows_in_quarter:
-        row_date = datetime.strptime(get_cell_by_column_name(row,
-                                                             'Event Start Date',
-                                                             col_map).value,
-                                     '%Y-%m-%d').date()
+        row_date = get_start_date(row, col_map)
         if new_row_start_date < row_date:
             return row.id
+
+
+def get_start_date(row: smartsheet.models.row, col_map: dict, column: str = 'Event Start Date'):
+    if event_date := get_cell_by_column_name(row, column, col_map).value:
+        try:
+            return datetime.strptime(event_date, '%Y-%m-%d').date()
+        except ValueError:
+            return date(1, 1, 1)  # if string is not a date, put it in the past
+    else:
+        return date(3000, 1, 1)  # if the row has no date, put it in the future
 
 
 def get_args() -> argparse.Namespace:
