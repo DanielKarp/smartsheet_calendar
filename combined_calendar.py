@@ -6,8 +6,8 @@ from re import match
 
 import smartsheet
 
-from utils import (COLOR_INDEX, clear_rows, column_name_to_id_map, get_cell_by_column_name, write_rows,
-                   replace_event_names)
+from utils import (COLOR_INDEX, clear_rows, column_name_to_id_map, get_cell_by_column_name, replace_event_names,
+                   write_rows)
 
 MAP_SHEET = 6446980407814020
 INTAKE_FORM_SHEET = 3901696217769860
@@ -83,6 +83,10 @@ def process_map_sheet():
         end_date = row.get_column(end_col.id).value
         new_cells.append((event, start_date or "", end_date or "", color))
 
+        jll_col = next(col for col in columns if col.title == "JLL Hand over date")
+        jll_date = row.get_column(jll_col.id).value
+        new_cells.append((event + ' | JLL Hand Over', jll_date or "", "", color))
+
     return new_cells
 
 
@@ -93,7 +97,16 @@ def process_intake_sheet():
     rows = sheet.rows
     columns = sheet.columns
     col_map = column_name_to_id_map(columns=columns)
+    date_cols = [
+        col
+        for col in columns
+        if col.type == "DATE"
+        and not col.hidden
+        and col.title != "Event Start Date"
+        and col.title != "Event End Date"
+    ]
     logger.debug(f"found {len(columns)} total columns")
+    logger.debug(f"found {len(date_cols)} date-type columns")
     logger.debug(f"found {len(rows)} rows")
     for row in rows:
         event = get_cell_by_column_name(row, "Event Name", col_map).value
@@ -114,6 +127,12 @@ def process_intake_sheet():
         start_date = row.get_column(start_col.id).value
         end_date = row.get_column(end_col.id).value
         new_cells.append((event, start_date or "", end_date or "", color))
+
+        for date_col in date_cols:
+            item = replace_event_names(date_col.title)
+            name = f"{event} | {item}"
+            date = row.get_column(date_col.id).value
+            new_cells.append((name, date or "", "", color))
 
     return new_cells
 
