@@ -118,7 +118,7 @@ def send_row(sheet_id: int,
 
     update_row_status(row=new_row,
                       column_mapping=map_column_mapping,
-                      value='Green')
+                      value='Yellow')
     new_row.cells.append(smartsheet
                          .models.Cell(dict(value=True,
                                            column_id=map_column_mapping['TechX Service Request'])))
