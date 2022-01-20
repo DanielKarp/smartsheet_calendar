@@ -30,16 +30,8 @@ logger.addHandler(stream_handler)
 
 logger.info("starting control program")
 
-logger.info("starting request sheet to map calendar processing")
-process_request()
+for process_cal in (process_request, process_intake, process_map, process_combined):
+    logger.info(f"starting {process_cal.__module__.split('.')[-1].replace('_', ' ')} processing")
+    # process_cal()
 
-logger.info("starting intake calendar processing")
-process_intake()
-
-logger.info("starting map calendar processing")
-process_map()
-
-logger.info("starting combined calendar processing")
-process_combined()
-
-logger.info("program finished\n")
+logger.info("program finished")
