@@ -6,11 +6,11 @@ from re import match
 
 import smartsheet
 
-from utils import COLOR_INDEX, clear_rows, column_name_to_id_map, get_cell_by_column_name, replace_event_names, \
-    write_rows
+from utils import COLOR_INDEX, clear_and_write_sheet, column_name_to_id_map, get_cell_by_column_name, \
+    replace_event_names
 
 INTAKE_FORM_SHEET = 3901696217769860
-CALENDAR_SHEET = 4620060233885572
+CALENDAR_SHEET = 8959263235172228
 
 fmt_str = "%(levelname)s:%(asctime)s:%(name)s: %(message)s"
 formatter = logging.Formatter(fmt_str)
@@ -48,7 +48,7 @@ CHANGE_AGENT = "dkarpele_smartsheet_calendar"
 smart.with_change_agent(CHANGE_AGENT)
 
 
-def process_sheet():
+def intake_processing():
     new_cells = []
     color_cycle = cycle(COLOR_INDEX)
     sheet = smart.Sheets.get_sheet(INTAKE_FORM_SHEET)
@@ -59,9 +59,9 @@ def process_sheet():
         col
         for col in columns
         if col.type == "DATE"
-        and not col.hidden
-        and col.title != "Event Start Date"
-        and col.title != "Event End Date"
+           and not col.hidden
+           and col.title != "Event Start Date"
+           and col.title != "Event End Date"
     ]
     logger.debug(f"found {len(columns)} total columns")
     logger.debug(f"found {len(date_cols)} date-type columns")
@@ -92,9 +92,11 @@ def process_sheet():
             date = row.get_column(date_col.id).value
             new_cells.append((name, date or "", "", color))
 
-    cal_sheet = smart.Sheets.get_sheet(CALENDAR_SHEET)
-    clear_rows(smart, cal_sheet)
-    write_rows(smart, cal_sheet, new_cells)
+    return new_cells
+
+
+def process_sheet():
+    clear_and_write_sheet(smart, CALENDAR_SHEET, intake_processing())
 
 
 if __name__ == "__main__":

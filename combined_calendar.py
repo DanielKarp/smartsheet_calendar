@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 
 import logging
-from itertools import cycle
-from re import match
 
 import smartsheet
 
-from utils import (COLOR_INDEX, clear_rows, column_name_to_id_map, get_cell_by_column_name, replace_event_names,
-                   write_rows)
+from intake_calendar import intake_processing
+from map_calendar import map_processing
+from utils import clear_and_write_sheet
 
 MAP_SHEET = 6446980407814020
 INTAKE_FORM_SHEET = 3901696217769860
-CALENDAR_SHEET = 8959263235172228
+CALENDAR_SHEET = 4620060233885572
 
 fmt_str = "%(levelname)s:%(asctime)s:%(name)s: %(message)s"
 formatter = logging.Formatter(fmt_str)
@@ -49,102 +48,10 @@ CHANGE_AGENT = "dkarpele_smartsheet_calendar"
 smart.with_change_agent(CHANGE_AGENT)
 
 
-def process_map_sheet():
-    new_cells = []
-    color_cycle = cycle(COLOR_INDEX)
-    sheet = smart.Sheets.get_sheet(MAP_SHEET)
-    rows = sheet.rows
-    columns = sheet.columns
-    col_map = column_name_to_id_map(columns=columns)
-    logger.debug(f"found {len(columns)} total columns")
-    logger.debug(f"found {len(rows)} rows")
-    for row in rows:
-        event = get_cell_by_column_name(row, "Event Name", col_map).display_value
-        # if the row matches any of the below, it should not be added to the calendar
-        if match(r"^Q[1-4]", str(event)) or not row.parent_id or event is None:
-            logger.debug(f"{event} was identified as a non-event row")
-            continue
-        if get_cell_by_column_name(row, "TechX Status", col_map).value != 'Green':
-            logger.debug(f"{event} was identified as an unconfirmed event")
-            continue
-
-        logger.debug(f"{event} is being processed")
-        color = next(color_cycle)  # each event gets its own color
-        
-        just_event = event
-        if staff := get_cell_by_column_name(row, "TechX Resource", col_map).value:
-            staff = staff.strip('"')
-            logger.debug(f"    {event} staff identified: {staff}")
-            event = f'{event} | {staff}'
-        else:
-            logger.debug(f"    {event} was identified as an event without anyone assigned")
-
-        start_date = get_cell_by_column_name(row, "Event Start Date", col_map).value
-        end_date = get_cell_by_column_name(row, "Event End Date", col_map).value
-        new_cells.append((event, start_date or "", end_date or "", color))
-
-        jll_date = get_cell_by_column_name(row, "JLL Hand over date", col_map).value
-        new_cells.append((just_event + ' | JLL Hand Over', jll_date or "", "", color))
-
-        setup_date = get_cell_by_column_name(row, "Move In Date", col_map).value
-        new_cells.append((just_event + ' | Setup Start', setup_date or "", "", color))
-
-    return new_cells
-
-
-def process_intake_sheet():
-    new_cells = []
-    color_cycle = cycle(COLOR_INDEX)
-    sheet = smart.Sheets.get_sheet(INTAKE_FORM_SHEET)
-    rows = sheet.rows
-    columns = sheet.columns
-    col_map = column_name_to_id_map(columns=columns)
-    date_cols = [
-        col
-        for col in columns
-        if col.type == "DATE"
-        and not col.hidden
-        and col.title != "Event Start Date"
-        and col.title != "Event End Date"
-    ]
-    logger.debug(f"found {len(columns)} total columns")
-    logger.debug(f"found {len(date_cols)} date-type columns")
-    logger.debug(f"found {len(rows)} rows")
-    for row in rows:
-        event = get_cell_by_column_name(row, "Event Name", col_map).value
-        # if the row matches, it is a label row. Contains no data so it's skipped
-        if match(r"^Q[1-4] FY\d{2}", event):
-            logger.debug(f"{event} was identified as a separator row")
-            continue
-        event_state = get_cell_by_column_name(row, "Event State & Type", col_map).value
-        if event_state is not None and "Canceled" in event_state:
-            logger.debug(f"{event} was identified as a canceled event")
-            event = f'(Canceled) {event}'
-        logger.debug(f"{event} is being processed")
-        color = next(color_cycle)  # each event gets its own color
-        event = replace_event_names(event)  # do some filtering to shorten some words
-
-        start_col = next(col for col in columns if col.title == "Event Start Date")
-        end_col = next(col for col in columns if col.title == "Event End Date")
-        start_date = row.get_column(start_col.id).value
-        end_date = row.get_column(end_col.id).value
-        new_cells.append((event, start_date or "", end_date or "", color))
-
-        for date_col in date_cols:
-            item = replace_event_names(date_col.title)
-            name = f"{event} | {item}"
-            date = row.get_column(date_col.id).value
-            new_cells.append((name, date or "", "", color))
-
-    return new_cells
-
-
 def process_sheet():
-    new_cells = process_map_sheet()
-    new_cells.extend(process_intake_sheet())
-    cal_sheet = smart.Sheets.get_sheet(CALENDAR_SHEET)
-    clear_rows(smart, cal_sheet)
-    write_rows(smart, cal_sheet, new_cells)
+    new_cells = map_processing()
+    new_cells.extend(intake_processing())
+    clear_and_write_sheet(smart, CALENDAR_SHEET, new_cells)
 
 
 if __name__ == "__main__":

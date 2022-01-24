@@ -6,7 +6,7 @@ from re import match
 
 import smartsheet
 
-from utils import COLOR_INDEX, clear_rows, column_name_to_id_map, get_cell_by_column_name, write_rows
+from utils import COLOR_INDEX, clear_and_write_sheet, column_name_to_id_map, get_cell_by_column_name
 
 MAP_SHEET = 6446980407814020
 CALENDAR_SHEET = 6041912604944260
@@ -47,23 +47,14 @@ CHANGE_AGENT = "dkarpele_smartsheet_calendar"
 smart.with_change_agent(CHANGE_AGENT)
 
 
-def process_sheet():
+def map_processing():
     new_cells = []
     color_cycle = cycle(COLOR_INDEX)
     sheet = smart.Sheets.get_sheet(MAP_SHEET)
     rows = sheet.rows
     columns = sheet.columns
     col_map = column_name_to_id_map(columns=columns)
-    date_cols = [
-        col
-        for col in columns
-        if col.type == "DATE"
-        and not col.hidden
-        and col.title != "Event Start Date"
-        and col.title != "Event End Date"
-    ]
     logger.debug(f"found {len(columns)} total columns")
-    logger.debug(f"found {len(date_cols)} date-type columns")
     logger.debug(f"found {len(rows)} rows")
     for row in rows:
         event = get_cell_by_column_name(row, "Event Name", col_map).display_value
@@ -78,6 +69,7 @@ def process_sheet():
         logger.debug(f"{event} is being processed")
         color = next(color_cycle)  # each event gets its own color
 
+        just_event = event
         if staff := get_cell_by_column_name(row, "TechX Resource", col_map).value:
             staff = staff.strip('"')
             logger.debug(f"    {event} staff identified: {staff}")
@@ -89,15 +81,17 @@ def process_sheet():
         end_date = get_cell_by_column_name(row, "Event End Date", col_map).value
         new_cells.append((event, start_date or "", end_date or "", color))
 
-        for date_col in date_cols:
-            item = date_col.title
-            name = f"{event} | {item}"
-            date = row.get_column(date_col.id).value
-            new_cells.append((name, date or "", "", color))
+        jll_date = get_cell_by_column_name(row, "JLL Hand over date", col_map).value
+        new_cells.append((just_event + ' | JLL Hand Over', jll_date or "", "", color))
 
-    cal_sheet = smart.Sheets.get_sheet(CALENDAR_SHEET)
-    clear_rows(smart, cal_sheet)
-    write_rows(smart, cal_sheet, new_cells)
+        setup_date = get_cell_by_column_name(row, "Move In Date", col_map).value
+        new_cells.append((just_event + ' | Setup Start', setup_date or "", "", color))
+
+    return new_cells
+
+
+def process_sheet():
+    clear_and_write_sheet(smart, CALENDAR_SHEET, map_processing())
 
 
 if __name__ == "__main__":

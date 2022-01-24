@@ -82,7 +82,7 @@ def replace_event_names(event: str) -> str:
         if original in event:
             new_event = event.replace(original, new)
             logger.debug(
-                f'found "{original}" in {event}, replaced with "{new}", result is {new_event}'
+                f'    found "{original}" in {event}, replaced with "{new}", result is {new_event}'
             )
             event = new_event
     return event
@@ -137,3 +137,9 @@ def get_cell_by_column_name(
 def column_name_to_id_map(columns: list) -> dict:
     # returns a title:id dict of all columns in sheet
     return {column.title: column.id for column in columns}
+
+
+def clear_and_write_sheet(smart: smartsheet.Smartsheet, cal_sheet_id: int, new_cells: list) -> None:
+    cal_sheet = smart.Sheets.get_sheet(cal_sheet_id)
+    clear_rows(smart, cal_sheet)
+    write_rows(smart, cal_sheet, new_cells)
