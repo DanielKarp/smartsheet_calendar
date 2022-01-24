@@ -3,7 +3,6 @@ import logging
 from combined_calendar import process_sheet as process_combined
 from intake_calendar import process_sheet as process_intake
 from map_calendar import process_sheet as process_map
-from request_to_map.request_to_map_calendar import process_sheet as process_request
 
 fmt_str = "%(levelname)s:%(asctime)s:%(name)s: %(message)s"
 formatter = logging.Formatter(fmt_str)
@@ -30,7 +29,10 @@ logger.addHandler(stream_handler)
 
 logger.info("starting control program")
 
-for process_cal in (process_request, process_intake, process_map, process_combined):
+for process_cal in (process_intake,
+                    process_map,
+                    process_combined,
+                    ):
     logger.info(f"starting {process_cal.__module__.split('.')[-1].replace('_', ' ')} processing")
     process_cal()
 
