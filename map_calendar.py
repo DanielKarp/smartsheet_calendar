@@ -66,7 +66,7 @@ def process_sheet():
     logger.debug(f"found {len(date_cols)} date-type columns")
     logger.debug(f"found {len(rows)} rows")
     for row in rows:
-        event = get_cell_by_column_name(row, "Show Name", col_map).display_value
+        event = get_cell_by_column_name(row, "Event Name", col_map).display_value
         # if the row matches any of the below, it should not be added to the calendar
         if match(r"^Q[1-4]", str(event)) or not row.parent_id or event is None:
             logger.debug(f"{event} was identified as a non-event row")

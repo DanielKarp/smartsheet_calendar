@@ -32,6 +32,6 @@ logger.info("starting control program")
 
 for process_cal in (process_request, process_intake, process_map, process_combined):
     logger.info(f"starting {process_cal.__module__.split('.')[-1].replace('_', ' ')} processing")
-    # process_cal()
+    process_cal()
 
 logger.info("program finished")
