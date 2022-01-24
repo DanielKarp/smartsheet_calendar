@@ -12,22 +12,23 @@ smart.errors_as_exceptions(True)
 CHANGE_AGENT = 'dkarpele_smartsheet_calendar'
 smart.with_change_agent(CHANGE_AGENT)
 
-REQUEST_SHEET_ID = 4026093033285508
-MAP_SHEET_ID = 1656024609384324
-
 
 def v_print(*_, **__) -> None:
     pass
 
 
-def process_sheet(request_sheet_id: int = REQUEST_SHEET_ID,
-                  map_sheet_id: int = MAP_SHEET_ID,
-                  simulate: bool = False) -> None:
+def process_sheet(sheet_ids):
+    _process_sheet(sheet_ids['source'], sheet_ids['destination'], simulate=False)
+
+
+def _process_sheet(request_id: int,
+                   map_id: int,
+                   simulate: bool = False) -> None:
     """Main loop for processing the sheet
     takes the sheet ids for the request sheet to pull rows from, and
     the map sheet to send rows to. An optional simulate option does not
     alter any sheets, but only shows the rows that would be copied.
-    Gets rows from the request sheet, and builds {name: id} column map
+    Get rows from the request sheet, and builds {name: id} column map
     Prints out the column names and ids
     For each row in the request sheet, the TechX status column is checked
     if it is Yellow, the row is printed and if simulation is false, the
@@ -36,9 +37,9 @@ def process_sheet(request_sheet_id: int = REQUEST_SHEET_ID,
     Does not return anything.
     """
 
-    rows = smart.Sheets.get_sheet(request_sheet_id).rows
-    request_column_mapping = column_name_to_id_map(request_sheet_id)
-    map_column_mapping = column_name_to_id_map(map_sheet_id)
+    rows = smart.Sheets.get_sheet(request_id).rows
+    request_column_mapping = column_name_to_id_map(request_id)
+    map_column_mapping = column_name_to_id_map(map_id)
 
     print_col_headings(request_column_mapping)
 
@@ -47,11 +48,11 @@ def process_sheet(request_sheet_id: int = REQUEST_SHEET_ID,
             v_print(f'  ^row will be processed')
             print_row(row, request_column_mapping)
             if not simulate:
-                send_row(sheet_id=map_sheet_id,
+                send_row(sheet_id=map_id,
                          row=row,
                          request_column_mapping=request_column_mapping,
                          map_column_mapping=map_column_mapping)
-                smart.Sheets.update_rows(request_sheet_id,
+                smart.Sheets.update_rows(request_id,
                                          update_row_status(row=row,
                                                            column_mapping=request_column_mapping,
                                                            value='Green'))
@@ -59,7 +60,7 @@ def process_sheet(request_sheet_id: int = REQUEST_SHEET_ID,
                 v_print('Simulation! This row would have been updated to green and added to the map sheet.\n')
     if not simulate:
         v_print('Row addition complete, colorizing rows...')
-        colorize_rows(smart, map_sheet_id)
+        colorize_rows(smart, map_id)
     v_print('All operations complete!')
 
 
@@ -70,7 +71,7 @@ def send_row(sheet_id: int,
     """Main function for sending each row
     Takes the map sheet id, the row to be sent, and the request sheet
     {name: id} column map.
-    Calculated the FY/Quarter number, thee map sheet {name: id}
+    Calculated the FY/Quarter number, the map sheet {name: id}
     column map, and the dictionary of fy and quarter rows
     Creates an empty row, and sets the parent_id to the id of the
     quarter to which it belongs, and sets it to be added to the
@@ -225,12 +226,12 @@ def find_child_rows(sheet_id: int, parent_row_id: int):
 
 def get_quarter_parent_id(fy: int, q: int, fy_q_dict: dict, column_mapping: dict, sheet_id: int) -> int:
     if ('FY' + str(fy)) not in fy_q_dict:
-        add_fyq_rows(fy, column_mapping)
+        add_fyq_rows(fy, column_mapping, sheet_id)
         fy_q_dict = make_fy_q_dict(sheet_id, column_mapping)
     return fy_q_dict['FY' + str(fy)][1]['Q' + str(q)].id
 
 
-def add_fyq_rows(fy: int, column_mapping: dict) -> None:
+def add_fyq_rows(fy: int, column_mapping: dict, sheet_id: int) -> None:
     main_column_id = column_mapping['Event Name']
 
     fy_row = smartsheet.models.Row()
@@ -238,7 +239,7 @@ def add_fyq_rows(fy: int, column_mapping: dict) -> None:
         "column_id": main_column_id,
         "value": "FY" + str(fy)
     })
-    fy_add_result = smart.Sheets.add_rows(MAP_SHEET_ID, fy_row)  # add the FY row first
+    fy_add_result = smart.Sheets.add_rows(sheet_id, fy_row)  # add the FY row first
     fy_row_id = fy_add_result.result[0].id  # get the id of the row we just added
 
     quarter_rows = []
@@ -252,7 +253,7 @@ def add_fyq_rows(fy: int, column_mapping: dict) -> None:
         new_row.to_bottom = True
         quarter_rows.append(new_row)
 
-    smart.Sheets.add_rows(MAP_SHEET_ID, quarter_rows)  # add the quarter rows
+    smart.Sheets.add_rows(sheet_id, quarter_rows)  # add the quarter rows
 
 
 def sort_quarter_rows(sheet_id: int,
@@ -296,4 +297,9 @@ if __name__ == '__main__':
     if args.verbose:
         def v_print(*print_args, **print_kwargs) -> None:
             print(*print_args, **print_kwargs)
-    process_sheet(REQUEST_SHEET_ID, MAP_SHEET_ID, simulate=args.simulate)
+    import yaml
+    with open('sheet_id.yaml') as yaml_file:
+        config_sheet_id = yaml.safe_load(yaml_file)
+    request_sheet_id = config_sheet_id['request to map']['source']
+    map_sheet_id = config_sheet_id['request to map']['destination']
+    _process_sheet(request_sheet_id, map_sheet_id, simulate=args.simulate)
