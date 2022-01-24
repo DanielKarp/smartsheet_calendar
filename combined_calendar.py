@@ -70,22 +70,24 @@ def process_map_sheet():
 
         logger.debug(f"{event} is being processed")
         color = next(color_cycle)  # each event gets its own color
-
+        
+        just_event = event
         if staff := get_cell_by_column_name(row, "TechX Resource", col_map).value:
             staff = staff.strip('"')
+            logger.debug(f"    {event} staff identified: {staff}")
             event = f'{event} | {staff}'
         else:
-            logger.debug(f"{event} was identified as an event without anyone assigned")
+            logger.debug(f"    {event} was identified as an event without anyone assigned")
 
-        start_col = next(col for col in columns if col.title == "Event Start Date")
-        end_col = next(col for col in columns if col.title == "Event End Date")
-        start_date = row.get_column(start_col.id).value
-        end_date = row.get_column(end_col.id).value
+        start_date = get_cell_by_column_name(row, "Event Start Date", col_map).value
+        end_date = get_cell_by_column_name(row, "Event End Date", col_map).value
         new_cells.append((event, start_date or "", end_date or "", color))
 
-        jll_col = next(col for col in columns if col.title == "JLL Hand over date")
-        jll_date = row.get_column(jll_col.id).value
-        new_cells.append((event + ' | JLL Hand Over', jll_date or "", "", color))
+        jll_date = get_cell_by_column_name(row, "JLL Hand over date", col_map).value
+        new_cells.append((just_event + ' | JLL Hand Over', jll_date or "", "", color))
+
+        setup_date = get_cell_by_column_name(row, "Move In Date", col_map).value
+        new_cells.append((just_event + ' | Setup Start', setup_date or "", "", color))
 
     return new_cells
 
