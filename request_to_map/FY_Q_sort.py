@@ -29,14 +29,14 @@ YEARS_AND_QUARTERS = {
 
 
 def calc_fy_q_hardcoded(input_date):
-    last_year = max(YEARS_AND_QUARTERS.keys())
     input_date = datetime.strptime(input_date, '%Y-%m-%d').date()
     for year, quarters in YEARS_AND_QUARTERS.items():
         for quarter, time_range in quarters.items():
             if time_range[0] <= input_date <= time_range[1]:
                 return year, quarter
     else:
-        return last_year + 1, 1  # if all else fails, return the next year after the last known year, Q1
+        # if all else fails, return the next year after the last known year, Q1
+        return max(YEARS_AND_QUARTERS.keys()) + 1, 1
 
 
 def print_quarters():
@@ -49,13 +49,14 @@ def print_quarters():
 
 
 if __name__ == '__main__':
-    test_dates = ['2017-04-20', '2020-01-01', '2020-07-22', '2020-07-27', '2021-07-31', '2021-10-08']
+    test_dates = ['2017-04-20', '2020-01-01', '2020-07-22', '2020-07-27', '2021-07-31', '2021-10-08', '2022-10-08', '2023-10-08']
     print('test:')
     for test_date in test_dates:
         print(test_date)
         # second test - calculate quarter from a hardcoded list of quarters with start/end dates
         result = calc_fy_q_hardcoded(test_date)
-        print('test 2:\n\t', result)
+        print('result:')
+        print(f'\t{result}')
         print(f'\tFY{result[0]} Q{result[1]}\n')
 
     # just print all the years and quarters
