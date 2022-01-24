@@ -80,14 +80,13 @@ def process_sheet():
 
         if staff := get_cell_by_column_name(row, "TechX Resource", col_map).value:
             staff = staff.strip('"')
+            logger.debug(f"    {event} staff identified: {staff}")
             event = f'{event} | {staff}'
         else:
-            logger.debug(f"{event} was identified as an event without anyone assigned")
+            logger.debug(f"    {event} was identified as an event without anyone assigned")
 
-        start_col = next(col for col in columns if col.title == "Event Start Date")
-        end_col = next(col for col in columns if col.title == "Event End Date")
-        start_date = row.get_column(start_col.id).value
-        end_date = row.get_column(end_col.id).value
+        start_date = get_cell_by_column_name(row, "Event Start Date", col_map).value
+        end_date = get_cell_by_column_name(row, "Event End Date", col_map).value
         new_cells.append((event, start_date or "", end_date or "", color))
 
         for date_col in date_cols:
