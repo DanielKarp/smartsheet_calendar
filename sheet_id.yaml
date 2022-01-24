@@ -1,0 +1,18 @@
+---
+map:
+    source: 6446980407814020
+    destination: 6041912604944260
+
+intake:
+    source: 3901696217769860
+    destination: 8959263235172228
+
+combined:
+    source:
+        map: 6446980407814020
+        intake: 3901696217769860
+    destination: 4620060233885572
+
+request to map:
+    source: 4026093033285508
+    destination: 1656024609384324
