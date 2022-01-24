@@ -9,9 +9,6 @@ import smartsheet
 from utils import COLOR_INDEX, clear_and_write_sheet, column_name_to_id_map, get_cell_by_column_name, \
     replace_event_names
 
-INTAKE_FORM_SHEET = 3901696217769860
-CALENDAR_SHEET = 8959263235172228
-
 fmt_str = "%(levelname)s:%(asctime)s:%(name)s: %(message)s"
 formatter = logging.Formatter(fmt_str)
 
@@ -48,10 +45,10 @@ CHANGE_AGENT = "dkarpele_smartsheet_calendar"
 smart.with_change_agent(CHANGE_AGENT)
 
 
-def intake_processing():
+def intake_processing(intake_sheet_id: int):
     new_cells = []
     color_cycle = cycle(COLOR_INDEX)
-    sheet = smart.Sheets.get_sheet(INTAKE_FORM_SHEET)
+    sheet = smart.Sheets.get_sheet(intake_sheet_id)
     rows = sheet.rows
     columns = sheet.columns
     col_map = column_name_to_id_map(columns=columns)
@@ -95,11 +92,14 @@ def intake_processing():
     return new_cells
 
 
-def process_sheet():
-    clear_and_write_sheet(smart, CALENDAR_SHEET, intake_processing())
+def process_sheet(sheet_ids):
+    clear_and_write_sheet(smart, sheet_ids['destination'], intake_processing(sheet_ids['source']))
 
 
 if __name__ == "__main__":
     logger.info("starting intake calendar program")
-    process_sheet()
+    import yaml
+    with open('sheet_id.yaml') as yaml_file:
+        sheet_id = yaml.safe_load(yaml_file)
+    process_sheet(sheet_id['intake'])
     logger.info("intake calendar program finished\n")

@@ -8,9 +8,6 @@ import smartsheet
 
 from utils import COLOR_INDEX, clear_and_write_sheet, column_name_to_id_map, get_cell_by_column_name
 
-MAP_SHEET = 6446980407814020
-CALENDAR_SHEET = 6041912604944260
-
 fmt_str = "%(levelname)s:%(asctime)s:%(name)s: %(message)s"
 formatter = logging.Formatter(fmt_str)
 
@@ -47,10 +44,10 @@ CHANGE_AGENT = "dkarpele_smartsheet_calendar"
 smart.with_change_agent(CHANGE_AGENT)
 
 
-def map_processing():
+def map_processing(map_sheet_id: int):
     new_cells = []
     color_cycle = cycle(COLOR_INDEX)
-    sheet = smart.Sheets.get_sheet(MAP_SHEET)
+    sheet = smart.Sheets.get_sheet(map_sheet_id)
     rows = sheet.rows
     columns = sheet.columns
     col_map = column_name_to_id_map(columns=columns)
@@ -90,11 +87,14 @@ def map_processing():
     return new_cells
 
 
-def process_sheet():
-    clear_and_write_sheet(smart, CALENDAR_SHEET, map_processing())
+def process_sheet(sheet_ids):
+    clear_and_write_sheet(smart, sheet_ids['destination'], map_processing(sheet_ids['source']))
 
 
 if __name__ == "__main__":
     logger.info("starting map calendar program")
-    process_sheet()
+    import yaml
+    with open('sheet_id.yaml') as yaml_file:
+        sheet_id = yaml.safe_load(yaml_file)
+    process_sheet(sheet_id['map'])
     logger.info("map calendar program finished\n")

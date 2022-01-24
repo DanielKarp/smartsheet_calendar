@@ -8,10 +8,6 @@ from intake_calendar import intake_processing
 from map_calendar import map_processing
 from utils import clear_and_write_sheet
 
-MAP_SHEET = 6446980407814020
-INTAKE_FORM_SHEET = 3901696217769860
-CALENDAR_SHEET = 4620060233885572
-
 fmt_str = "%(levelname)s:%(asctime)s:%(name)s: %(message)s"
 formatter = logging.Formatter(fmt_str)
 
@@ -48,13 +44,16 @@ CHANGE_AGENT = "dkarpele_smartsheet_calendar"
 smart.with_change_agent(CHANGE_AGENT)
 
 
-def process_sheet():
-    new_cells = map_processing()
-    new_cells.extend(intake_processing())
-    clear_and_write_sheet(smart, CALENDAR_SHEET, new_cells)
+def process_sheet(sheet_ids):
+    new_cells = map_processing(sheet_ids['source']['map'])
+    new_cells.extend(intake_processing(sheet_ids['source']['intake']))
+    clear_and_write_sheet(smart, sheet_ids['destination'], new_cells)
 
 
 if __name__ == "__main__":
     logger.info("starting combined calendar program")
-    process_sheet()
+    import yaml
+    with open('sheet_id.yaml') as yaml_file:
+        sheet_id = yaml.safe_load(yaml_file)
+    process_sheet(sheet_id['combined'])
     logger.info("combined calendar program finished\n")
