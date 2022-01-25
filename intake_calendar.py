@@ -28,9 +28,9 @@ def intake_processing(intake_sheet_id: int) -> list:
         col
         for col in columns
         if col.type == "DATE"
-           and not col.hidden
-           and col.title != "Event Start Date"
-           and col.title != "Event End Date"
+        and not col.hidden
+        and col.title != "Event Start Date"
+        and col.title != "Event End Date"
     ]
     logger.debug(f"found {len(columns)} total columns")
     logger.debug(f"found {len(date_cols)} date-type columns")
