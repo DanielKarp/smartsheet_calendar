@@ -1,4 +1,4 @@
-import argparse
+import logging
 from datetime import date, datetime
 
 import smartsheet
@@ -6,15 +6,13 @@ import smartsheet
 from FY_Q_sort import calc_fy_q_hardcoded
 from colorize import colorize_rows
 
+logger = logging.getLogger('main')
+
 smart = smartsheet.Smartsheet()  # use 'SMARTSHEET_ACCESS_TOKEN' env variable
 smart.errors_as_exceptions(True)
 
 CHANGE_AGENT = 'dkarpele_smartsheet_calendar'
 smart.with_change_agent(CHANGE_AGENT)
-
-
-def v_print(*_, **__) -> None:
-    pass
 
 
 def process_sheet(sheet_ids):
@@ -42,12 +40,13 @@ def _process_sheet(request_id: int,
     map_column_mapping = column_name_to_id_map(map_id)
 
     print_col_headings(request_column_mapping)
-
+    rows_moved = 0
     for row in rows:
         if check_row(row, request_column_mapping):
-            v_print(f'  ^row will be processed')
+            logger.debug(f'  ^row will be processed')
             print_row(row, request_column_mapping)
             if not simulate:
+                rows_moved += 1
                 send_row(sheet_id=map_id,
                          row=row,
                          request_column_mapping=request_column_mapping,
@@ -57,11 +56,12 @@ def _process_sheet(request_id: int,
                                                            column_mapping=request_column_mapping,
                                                            value='Green'))
             else:
-                v_print('Simulation! This row would have been updated to green and added to the map sheet.\n')
+                logger.debug('Simulation! This row would have been updated to green and added to the map sheet.\n')
+    logger.info(f'{rows_moved} rows moved')
     if not simulate:
-        v_print('Row addition complete, colorizing rows...')
+        logger.info('colorizing rows...')
         colorize_rows(smart, map_id)
-    v_print('All operations complete!')
+    logger.info('all operations complete!')
 
 
 def send_row(sheet_id: int,
@@ -84,13 +84,13 @@ def send_row(sheet_id: int,
     Finally, that row is added to the map sheet
     Does not return anything.
     """
-    v_print('  Sending row...')
+    logger.debug('  Sending row...')
     fy, q = calc_fy_q_hardcoded(get_cell_by_column_name(row=row,
                                                         column_name='Event Start Date',
                                                         col_map=request_column_mapping).value)
-    v_print(f'  Fiscal Year: {fy}, Quarter: {q}')
+    logger.debug(f'  Fiscal Year: {fy}, Quarter: {q}')
     fy_q_dict = make_fy_q_dict(sheet_id, map_column_mapping)
-    v_print(f'  Found these fiscal years in sheet:', *list(fy_q_dict))
+    logger.debug(f'  Found these fiscal years in sheet: {list(fy_q_dict)}')
 
     new_row = smartsheet.models.Row()
 
@@ -110,12 +110,12 @@ def send_row(sheet_id: int,
     if sib_id:
         new_row.sibling_id = sib_id
         new_row.above = True
-        v_print(f'  Found sibling row with ID: {sib_id} (row will be added above its sibling)')
+        logger.debug(f'  Found sibling row with ID: {sib_id} (row will be added above its sibling)')
     else:
         new_row.parent_id = row_parent_id
         new_row.to_bottom = True
-        v_print(f'  Sibling row not found. Falling back to parent ID of quarter ' +
-                f'row (row will be added to bottom of quarter row\'s children)')
+        logger.debug(f'  Sibling row not found. Falling back to parent ID of quarter ' +
+                     f'row (row will be added to bottom of quarter row\'s children)')
 
     update_row_status(row=new_row,
                       column_mapping=map_column_mapping,
@@ -123,10 +123,9 @@ def send_row(sheet_id: int,
     new_row.cells.append(smartsheet
                          .models.Cell(dict(value=True,
                                            column_id=map_column_mapping['TechX Service Request'])))
-    v_print('  Checked "TechX Service Request" column')
-
+    logger.debug('  Checked "TechX Service Request" column')
     smart.Sheets.add_rows(sheet_id, new_row)
-    v_print(f'  Row sent to sheet {sheet_id}!')
+    logger.debug(f'  Row sent to sheet {sheet_id}!')
 
 
 def update_row_status(row: smartsheet.models.Row,
@@ -148,7 +147,8 @@ def update_row_status(row: smartsheet.models.Row,
     new_row = smartsheet.models.Row()
     new_row.id, new_row.cells = row.id, [cell for cell in row.cells if cell.value]
     get_cell_by_column_name(new_row, column_name, column_mapping).value = value
-    v_print(f'  Updated {column_name} column in row {row.id if row.id is not None else "(no ID yet)"} to {value}')
+    logger.debug(
+        f'  Updated {column_name} column in row {new_row.id if new_row.id is not None else "(no ID yet)"} to {value}')
     return new_row
 
 
@@ -156,26 +156,24 @@ def check_row(row: smartsheet.models.Row,
               column_mapping: dict,
               column_name: str = 'TechX Status',
               val_to_test: str = 'Yellow') -> bool:
-    v_print(f'--checking row {get_cell_by_column_name(row, "Event Name", column_mapping).value} ({row.id}) ')
+    logger.debug(f'  checking row {get_cell_by_column_name(row, "Event Name", column_mapping).value} ({row.id}) ')
     return get_cell_by_column_name(row, column_name, column_mapping).value == val_to_test
 
 
 def print_col_headings(cols: dict) -> None:  # prints column name and id for all columns, plus FY/Quarter
-    v_print(*(column_format(col_title) for col_title in cols.keys()), 'FY/Quarter')
-    v_print(*(str(col_id).ljust(16) for col_id in cols.values()))
-    v_print()
+    logger.debug(' '.join([column_format(col_title) for col_title in cols.keys()] + ['FY/Quarter']))
+    logger.debug(' '.join(str(col_id).ljust(24) for col_id in cols.values()))
 
 
 def print_row(row: smartsheet.models.Row,
               column_mapping: dict,
               column_name: str = 'Event Start Date') -> None:
     # format, print the columns in the row + FY/Quarter
-    v_print(*(column_format(cell.display_value or cell.value) for cell in row.cells), sep=' ', end=' ')
     fy, q = calc_fy_q_hardcoded(get_cell_by_column_name(row, column_name, column_mapping).value)
-    v_print(f'FY{fy} Q{q}')
+    logger.debug(' '.join([column_format(c.display_value or c.value) for c in row.cells] + [f'FY{fy} Q{q}']))
 
 
-def column_format(item: str, just: int = 16) -> str:
+def column_format(item: str, just: int = 24) -> str:
     return (str(item)[:just - 2] + (str(item)[just - 2:] and '..')).ljust(just)
 
 
@@ -298,7 +296,8 @@ if __name__ == '__main__':
         def v_print(*print_args, **print_kwargs) -> None:
             print(*print_args, **print_kwargs)
     import yaml
-    with open('sheet_id.yaml') as yaml_file:
+    logging.basicConfig(level=logging.DEBUG, filename='../api_and_calendar.log')
+    with open('../sheet_id.yaml') as yaml_file:
         config_sheet_id = yaml.safe_load(yaml_file)
     request_sheet_id = config_sheet_id['request to map']['source']
     map_sheet_id = config_sheet_id['request to map']['destination']
