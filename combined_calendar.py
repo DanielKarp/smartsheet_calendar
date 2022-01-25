@@ -20,12 +20,3 @@ def process_sheet(sheet_ids):
     new_cells = map_processing(sheet_ids['source']['map'])
     new_cells.extend(intake_processing(sheet_ids['source']['intake']))
     clear_and_write_sheet(smart, sheet_ids['destination'], new_cells)
-
-
-if __name__ == "__main__":
-    logger.info("starting combined calendar program")
-    import yaml
-    with open('sheet_id.yaml') as yaml_file:
-        sheet_id = yaml.safe_load(yaml_file)
-    process_sheet(sheet_id['combined'])
-    logger.info("combined calendar program finished\n")

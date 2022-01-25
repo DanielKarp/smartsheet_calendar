@@ -276,29 +276,11 @@ def get_start_date(row: smartsheet.models.row, col_map: dict, column: str = 'Eve
         return date(3000, 1, 1)  # if the row has no date, put it in the future
 
 
-def get_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description='Copy rows selected by Yellow ' +
-                                                 'value in TechX Status column in ' +
-                                                 'Request sheet to Map sheet',
-                                     epilog=f'Written by Eugenia Liu and Daniel Karpelevitch')
-    parser.add_argument('-V', '--version', action='version',
-                        version=f"%(prog)s v1.0.3")
-    parser.add_argument('-v', '--verbose', action='store_true', dest='verbose',
-                        help='Enable verbose output')
-    parser.add_argument('-s', '--simulate', action='store_true', dest='simulate',
-                        help="Don't change sheets, just print what rows would be changed")
-    return parser.parse_args()
-
-
 if __name__ == '__main__':
-    args = get_args()
-    if args.verbose:
-        def v_print(*print_args, **print_kwargs) -> None:
-            print(*print_args, **print_kwargs)
     import yaml
     logging.basicConfig(level=logging.DEBUG, filename='../api_and_calendar.log')
     with open('../sheet_id.yaml') as yaml_file:
         config_sheet_id = yaml.safe_load(yaml_file)
     request_sheet_id = config_sheet_id['request to map']['source']
     map_sheet_id = config_sheet_id['request to map']['destination']
-    _process_sheet(request_sheet_id, map_sheet_id, simulate=args.simulate)
+    _process_sheet(request_sheet_id, map_sheet_id, simulate=False)

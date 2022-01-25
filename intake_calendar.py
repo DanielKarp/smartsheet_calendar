@@ -66,12 +66,3 @@ def intake_processing(intake_sheet_id: int):
 
 def process_sheet(sheet_ids):
     clear_and_write_sheet(smart, sheet_ids['destination'], intake_processing(sheet_ids['source']))
-
-
-if __name__ == "__main__":
-    logger.info("starting intake calendar program")
-    import yaml
-    with open('sheet_id.yaml') as yaml_file:
-        sheet_id = yaml.safe_load(yaml_file)
-    process_sheet(sheet_id['intake'])
-    logger.info("intake calendar program finished\n")

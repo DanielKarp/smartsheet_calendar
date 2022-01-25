@@ -61,12 +61,3 @@ def map_processing(map_sheet_id: int):
 
 def process_sheet(sheet_ids):
     clear_and_write_sheet(smart, sheet_ids['destination'], map_processing(sheet_ids['source']))
-
-
-if __name__ == "__main__":
-    logger.info("starting map calendar program")
-    import yaml
-    with open('sheet_id.yaml') as yaml_file:
-        sheet_id = yaml.safe_load(yaml_file)
-    process_sheet(sheet_id['map'])
-    logger.info("map calendar program finished\n")
