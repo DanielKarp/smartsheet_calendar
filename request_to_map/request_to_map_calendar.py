@@ -35,7 +35,7 @@ def _process_sheet(request_id: int,
     Does not return anything.
     """
 
-    rows = smart.Sheets.get_sheet(request_id).rows
+    rows = smart.Sheets.get_sheet(request_id, level=2, include=['objectValue']).rows
     request_column_mapping = column_name_to_id_map(request_id)
     map_column_mapping = column_name_to_id_map(map_id)
 
@@ -97,10 +97,20 @@ def send_row(sheet_id: int,
     for cell in row.cells:
         column_name = reverse_dict_search(request_column_mapping, cell.column_id)
         if column_name in map_column_mapping.keys():
-            new_cell = smartsheet.models.Cell()
-            new_cell.value = cell.value
-            new_cell.column_id = map_column_mapping[column_name]
-            new_row.cells.append(new_cell)
+            cell_contents = dict(column_id=map_column_mapping[column_name],
+                                 strict=False,
+                                 override_validation=True,
+                                 )
+            try:
+                if cell.object_value.object_type == 8:
+                    cell_value = smartsheet.models.MultiPicklistObjectValue()
+                    cell_value.values = cell.object_value.values
+                    cell_contents['object_value'] = cell_value
+                else:
+                    raise AttributeError
+            except AttributeError:
+                cell_contents['value'] = cell.value or ' '
+            new_row.cells.append(smartsheet.models.Cell(cell_contents))
 
     row_parent_id = get_quarter_parent_id(fy, q, fy_q_dict, map_column_mapping, sheet_id)
     sib_id = sort_quarter_rows(sheet_id,
@@ -117,9 +127,6 @@ def send_row(sheet_id: int,
         logger.debug(f'  Sibling row not found. Falling back to parent ID of quarter ' +
                      f'row (row will be added to bottom of quarter row\'s children)')
 
-    update_row_status(row=new_row,
-                      column_mapping=map_column_mapping,
-                      value='Yellow')
     new_row.cells.append(smartsheet
                          .models.Cell(dict(value=True,
                                            column_id=map_column_mapping['TechX Service Request'])))
@@ -143,9 +150,28 @@ def update_row_status(row: smartsheet.models.Row,
 
     Returns the new row object with the updated color column
     """
+    new_cells = []
+    new_row = smartsheet.models.Row(dict(id=row.id,
+                                         cells=row.cells,
+                                         expanded=row.expanded,
+                                         ))
+    for cell in row.cells:
+        cell_contents = dict(column_id=cell.column_id,
+                             strict=False,
+                             override_validation=True,
+                             )
+        try:
+            if cell.object_value.object_type == 8:
+                cell_value = smartsheet.models.MultiPicklistObjectValue()
+                cell_value.values = cell.object_value.values
+                cell_contents['object_value'] = cell_value
+            else:
+                raise AttributeError
+        except AttributeError:
+            cell_contents['value'] = cell.value or ' '
+        new_cells.append(smartsheet.models.Cell(cell_contents))
 
-    new_row = smartsheet.models.Row()
-    new_row.id, new_row.cells = row.id, [cell for cell in row.cells if cell.value]
+    new_row.cells = new_cells
     get_cell_by_column_name(new_row, column_name, column_mapping).value = value
     logger.debug(
         f'  Updated {column_name} column in row {new_row.id if new_row.id is not None else "(no ID yet)"} to {value}')
@@ -212,7 +238,7 @@ def find_fy_rows(sheet_id: int):
     return (
         row
         for row in smart.Sheets.get_sheet(sheet_id, level=2, include=['objectValue']).rows
-        if not row.to_dict().get('parentId', False))
+        if not row.to_dict().get('parentId', False) and str(row.cells[0].value).startswith('FY'))
 
 
 def find_child_rows(sheet_id: int, parent_row_id: int):
