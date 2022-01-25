@@ -16,7 +16,7 @@ CHANGE_AGENT = "dkarpele_smartsheet_calendar"
 smart.with_change_agent(CHANGE_AGENT)
 
 
-def process_sheet(sheet_ids):
+def process_sheet(sheet_ids) -> None:
     new_cells = map_processing(sheet_ids['source']['map'])
     new_cells.extend(intake_processing(sheet_ids['source']['intake']))
     clear_and_write_sheet(smart, sheet_ids['destination'], new_cells)

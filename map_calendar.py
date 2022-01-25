@@ -16,7 +16,7 @@ CHANGE_AGENT = "dkarpele_smartsheet_calendar"
 smart.with_change_agent(CHANGE_AGENT)
 
 
-def map_processing(map_sheet_id: int):
+def map_processing(map_sheet_id: int) -> list:
     new_cells = []
     color_cycle = cycle(COLOR_INDEX)
     sheet = smart.Sheets.get_sheet(map_sheet_id)
@@ -59,5 +59,5 @@ def map_processing(map_sheet_id: int):
     return new_cells
 
 
-def process_sheet(sheet_ids):
+def process_sheet(sheet_ids) -> None:
     clear_and_write_sheet(smart, sheet_ids['destination'], map_processing(sheet_ids['source']))

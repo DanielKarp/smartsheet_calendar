@@ -266,7 +266,7 @@ def sort_quarter_rows(sheet_id: int,
             return row.id
 
 
-def get_start_date(row: smartsheet.models.row, col_map: dict, column: str = 'Event Start Date'):
+def get_start_date(row: smartsheet.models.row, col_map: dict, column: str = 'Event Start Date') -> date:
     if event_date := get_cell_by_column_name(row, column, col_map).value:
         try:
             return datetime.strptime(event_date, '%Y-%m-%d').date()
