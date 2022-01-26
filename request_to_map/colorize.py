@@ -9,7 +9,7 @@ color_for_quarter = [{'quarter row': 12, 'event row': 5},
 
 
 def colorize_rows(smart: smartsheet.Smartsheet, sheet_id: int) -> None:
-    from request_to_map_calendar import find_child_rows, find_fy_rows
+    from request_to_map.request_to_map_calendar import find_child_rows, find_fy_rows
     rows_to_update = []
     for year_row in find_fy_rows(sheet_id):
         year_color = color_white
