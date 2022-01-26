@@ -8,38 +8,7 @@ import smartsheet
 
 from utils import COLOR_INDEX, clear_and_write_sheet, column_name_to_id_map, get_cell_by_column_name
 
-MAP_SHEET = 6446980407814020
-CALENDAR_SHEET = 6041912604944260
-
-fmt_str = "%(levelname)s:%(asctime)s:%(name)s: %(message)s"
-formatter = logging.Formatter(fmt_str)
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-d_file_handler = logging.FileHandler("api_and_calendar.log")
-d_file_handler.setLevel(logging.DEBUG)
-d_file_handler.setFormatter(formatter)
-
-i_file_handler = logging.FileHandler("calendar.log")
-i_file_handler.setLevel(logging.INFO)
-i_file_handler.setFormatter(formatter)
-
-stream_handler = logging.StreamHandler()
-stream_handler.setLevel(logging.INFO)
-stream_handler.setFormatter(formatter)
-
-logger.addHandler(i_file_handler)
-logger.addHandler(d_file_handler)
-logger.addHandler(stream_handler)
-
-s_file_handler = logging.FileHandler("api_and_calendar.log")
-s_file_handler.setLevel(logging.INFO)
-s_file_handler.setFormatter(formatter)
-
-s_logger = logging.getLogger("smartsheet.smartsheet")
-s_logger.addHandler(d_file_handler)
-s_logger.setLevel(logging.DEBUG)
+logger = logging.getLogger('main')
 
 smart = smartsheet.Smartsheet()  # use 'SMARTSHEET_ACCESS_TOKEN' env variable
 smart.errors_as_exceptions(True)
@@ -47,10 +16,10 @@ CHANGE_AGENT = "dkarpele_smartsheet_calendar"
 smart.with_change_agent(CHANGE_AGENT)
 
 
-def map_processing():
+def map_processing(map_sheet_id: int) -> list:
     new_cells = []
     color_cycle = cycle(COLOR_INDEX)
-    sheet = smart.Sheets.get_sheet(MAP_SHEET)
+    sheet = smart.Sheets.get_sheet(map_sheet_id)
     rows = sheet.rows
     columns = sheet.columns
     col_map = column_name_to_id_map(columns=columns)
@@ -90,11 +59,5 @@ def map_processing():
     return new_cells
 
 
-def process_sheet():
-    clear_and_write_sheet(smart, CALENDAR_SHEET, map_processing())
-
-
-if __name__ == "__main__":
-    logger.info("starting map calendar program")
-    process_sheet()
-    logger.info("map calendar program finished\n")
+def process_sheet(sheet_ids) -> None:
+    clear_and_write_sheet(smart, sheet_ids['destination'], map_processing(sheet_ids['source']))

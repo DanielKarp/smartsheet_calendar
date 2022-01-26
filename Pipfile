@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 smartsheet-python-sdk = "*"
+pyyaml = "*"
 
 [dev-packages]
 
