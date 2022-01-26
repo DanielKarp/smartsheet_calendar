@@ -3,8 +3,8 @@ from datetime import date, datetime
 
 import smartsheet
 
-from FY_Q_sort import calc_fy_q_hardcoded
-from colorize import colorize_rows
+from request_to_map.FY_Q_sort import calc_fy_q_hardcoded
+from request_to_map.colorize import colorize_rows
 
 logger = logging.getLogger('main')
 
