@@ -2,7 +2,7 @@ import logging
 
 import calendar_control
 
-fmt_str = "%(levelna`me)s:%(asctime)s::%(module)s:%(funcName)s: %(message)s"
+fmt_str = "%(levelname)s:%(asctime)s::%(module)s:%(funcName)s: %(message)s"
 formatter = logging.Formatter(fmt_str)
 
 logger = logging.getLogger('main')
@@ -29,7 +29,7 @@ s_file_handler.setLevel(logging.INFO)
 s_file_handler.setFormatter(formatter)
 
 s_logger = logging.getLogger("smartsheet.smartsheet")
-s_logger.addHandler(d_file_handler)
+s_logger.addHandler(s_file_handler)
 s_logger.setLevel(logging.INFO)
 
 

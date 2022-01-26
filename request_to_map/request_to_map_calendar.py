@@ -304,7 +304,7 @@ def get_start_date(row: smartsheet.models.row, col_map: dict, column: str = 'Eve
 
 if __name__ == '__main__':
     import yaml
-    logging.basicConfig(level=logging.DEBUG, filename='../api_and_calendar.log')
+    logging.basicConfig(level=logging.DEBUG)
     with open('../sheet_id.yaml') as yaml_file:
         config_sheet_id = yaml.safe_load(yaml_file)
     request_sheet_id = config_sheet_id['request to map']['source']
