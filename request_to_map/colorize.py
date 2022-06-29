@@ -2,10 +2,12 @@ import smartsheet
 
 color_white = 2
 color_for_year_row = 21
-color_for_quarter = [{'quarter row': 12, 'event row': 5},
-                     {'quarter row': 14, 'event row': 7},
-                     {'quarter row': 15, 'event row': 8},
-                     {'quarter row': 16, 'event row': 9}]
+color_for_quarter = {0: {'quarter row': 12, 'event row': 5},
+                     1: {'quarter row': 14, 'event row': 7},
+                     2: {'quarter row': 15, 'event row': 8},
+                     3: {'quarter row': 16, 'event row': 9}}
+
+fallback_color = {'quarter row': color_white, 'event row': color_white}
 
 
 def colorize_rows(smart: smartsheet.Smartsheet, sheet_id: int) -> None:
@@ -21,12 +23,12 @@ def colorize_rows(smart: smartsheet.Smartsheet, sheet_id: int) -> None:
 
         for quarter_num, quarter_row in enumerate(find_child_rows(sheet_id, year_row.id)):
             new_row = copy_row(quarter_row)
-            new_row = process_row(new_row, color_for_quarter[quarter_num]["quarter row"])
+            new_row = process_row(new_row, color_for_quarter.get(quarter_num, fallback_color)["quarter row"])
             rows_to_update.append(new_row)
 
             for event_row in find_child_rows(sheet_id, quarter_row.id):
                 new_row = copy_row(event_row)
-                new_row = process_row(new_row, color_for_quarter[quarter_num]["event row"])
+                new_row = process_row(new_row, color_for_quarter.get(quarter_num, fallback_color)["event row"])
                 rows_to_update.append(new_row)
 
     smart.Sheets.update_rows(sheet_id, rows_to_update)
