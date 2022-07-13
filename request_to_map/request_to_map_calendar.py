@@ -91,7 +91,8 @@ def send_row(sheet_id: int,
     logger.debug(f'  Fiscal Year: {fy}, Quarter: {q}')
     fy_q_dict = make_fy_q_dict(sheet_id, map_column_mapping)
     logger.debug(f'  Found these fiscal years in sheet: {list(fy_q_dict)}')
-
+    columns = smart.Sheets.get_columns(sheet_id, include_all=True, level=2)
+    column_dict = {col.title: col for col in columns.data}
     new_row = smartsheet.models.Row()
 
     for cell in row.cells:
@@ -102,9 +103,16 @@ def send_row(sheet_id: int,
                                  override_validation=True,
                                  )
             try:
-                if cell.object_value.object_type == 8:
+                if column_dict[column_name].type == 'MULTI_PICKLIST':
                     cell_value = smartsheet.models.MultiPicklistObjectValue()
-                    cell_value.values = cell.object_value.values
+
+                    try:
+                        cell_value.values = cell.object_value.values
+                    except AttributeError:
+                        if cell.value:
+                            cell_value = cell.value
+                        else:
+                            cell_value.values = ''
                     cell_contents['object_value'] = cell_value
                 else:
                     raise AttributeError
