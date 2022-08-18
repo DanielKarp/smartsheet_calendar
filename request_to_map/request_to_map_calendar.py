@@ -236,9 +236,9 @@ def make_fy_q_dict(sheet_id: int,
                                              column_mapping).value): [fy, {}] for fy in find_fy_rows(sheet_id)}
     for year, (year_row, _) in fy_q_dict.items():
         quarters = find_child_rows(sheet_id, year_row.id)
-        fy_q_dict[year][1] = {get_cell_by_column_name(quarter,
-                                                      column_name,
-                                                      column_mapping).value: quarter for quarter in quarters}
+        fy_q_dict[year][1] = {str(get_cell_by_column_name(quarter,
+                                                          column_name,
+                                                          column_mapping).value)[:2]: quarter for quarter in quarters}
     return fy_q_dict
 
 

@@ -62,7 +62,7 @@ def replace_event_names(event: str) -> str:
         if original in event:
             new_event = event.replace(original, new)
             logger.debug(
-                f'    found "{original}" in {event}, replaced with "{new}", result is {new_event}'
+                f'    found "{original}" in {event}, replaced with "{new}"; result is: {new_event}'
             )
             event = new_event
     return event
