@@ -73,9 +73,16 @@ def replace_event_names(event: str) -> str:
 
 def clear_rows(smart: smartsheet.Smartsheet, sheet: smartsheet.models.Sheet) -> None:
     if rows := [row.id for row in sheet.rows]:
-        logger.debug(f"clearing {len(rows)} rows")
-        smart.Sheets.delete_rows(sheet_id=sheet.id, ids=rows)
-        logger.info(f"cleared {len(rows)} rows")
+        num_rows = len(rows)
+        logger.debug(f"clearing {num_rows} rows")
+        if num_rows > 100:  # paginate
+            logger.debug("more than 100 rows; clearing 100 at a time")
+            for paginated_rows in [rows[i:i + 100] for i in range(0, num_rows, 100)]:
+                smart.Sheets.delete_rows(sheet_id=sheet.id, ids=paginated_rows)
+                logger.info(f"cleared {len(paginated_rows)} rows of {num_rows} total rows")
+        else:
+            smart.Sheets.delete_rows(sheet_id=sheet.id, ids=rows)
+            logger.info(f"cleared {len(rows)} rows")
     else:
         logger.warning("no rows cleared")
 
