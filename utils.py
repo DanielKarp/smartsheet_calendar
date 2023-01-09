@@ -48,7 +48,7 @@ COLORS = [
     "#61058B",
     "#592C00",
 ]
-COLOR_INDEX = list([i for i, _ in enumerate(COLORS)][4:])
+COLOR_INDEX = list(range(len(COLORS))[4:])
 
 
 def replace_event_names(event: str) -> str:
@@ -56,6 +56,9 @@ def replace_event_names(event: str) -> str:
         ("Cisco Live", "CL"),
         ("Cisco ", ""),
         ("Partner Summit", "PS"),
+        ("Date(s)", ""),
+        ("Date (s)", ""),
+        ("Dates", ""),
         ("Date", ""),
     ]
     for original, new in replacements:
@@ -70,6 +73,7 @@ def replace_event_names(event: str) -> str:
 
 def clear_rows(smart: smartsheet.Smartsheet, sheet: smartsheet.models.Sheet) -> None:
     if rows := [row.id for row in sheet.rows]:
+        logger.debug(f"clearing {len(rows)} rows")
         smart.Sheets.delete_rows(sheet_id=sheet.id, ids=rows)
         logger.info(f"cleared {len(rows)} rows")
     else:
@@ -102,6 +106,7 @@ def write_rows(smart: smartsheet.Smartsheet, sheet: smartsheet.models.Sheet, row
             new_row.cells = [new_cell1, new_cell2, new_cell3]
             new_rows.append(new_row)
     if new_rows:
+        logger.debug(f"writing {len(new_rows)} rows")
         smart.Sheets.add_rows(sheet.id, new_rows)
         logger.info(f"wrote {len(new_rows)} rows")
     else:
