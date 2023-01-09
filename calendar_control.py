@@ -23,8 +23,6 @@ def run() -> None:
                         ):
         module = process_cal.__module__.split('.')[-1].replace('_', ' ')
         logger.info(f"starting {module} processing")
-        try:
-            process_cal(sheet_ids[' '.join(module.split()[:-1])])
-        except Exception as e:
-            logger.error(e)
+        process_cal(sheet_ids[' '.join(module.split()[:-1])])
+
     logger.info("program finished")
