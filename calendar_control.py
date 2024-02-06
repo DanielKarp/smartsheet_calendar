@@ -16,7 +16,7 @@ def run() -> None:
         sheet_ids = yaml.safe_load(yaml_file)
 
     for process_cal in (
-                    #   process_request,
+                        process_request,
                         process_intake,
                         process_map,
                         process_combined,
