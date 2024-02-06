@@ -59,8 +59,9 @@ def _process_sheet(request_id: int,
                 logger.debug('Simulation! This row would have been updated to green and added to the map sheet.\n')
     logger.info(f'{rows_moved} rows moved')
     if not simulate:
-        logger.info('colorizing rows...')
-        colorize_rows(smart, map_id)
+        logger.info("colorization skipped due to a bug I haven't fixed yet")
+        # logger.info('colorizing rows...')
+        # colorize_rows(smart, map_id)
     logger.info('all operations complete!')
 
 
