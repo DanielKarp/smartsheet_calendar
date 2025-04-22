@@ -1,6 +1,7 @@
 /venv/
 /.idea/
 *.log
+*.pyc
 __pycache__/calendar_control.cpython-312.pyc
 __pycache__/combined_calendar.cpython-312.pyc
 __pycache__/intake_calendar.cpython-312.pyc
