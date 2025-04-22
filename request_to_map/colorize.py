@@ -31,7 +31,10 @@ def colorize_rows(smart: smartsheet.Smartsheet, sheet_id: int) -> None:
                 new_row = process_row(new_row, color_for_quarter.get(quarter_num, fallback_color)["event row"])
                 rows_to_update.append(new_row)
 
-    smart.Sheets.update_rows(sheet_id, rows_to_update)
+    try:
+        smart.Sheets.update_rows(sheet_id, rows_to_update)
+    except Exception as e:
+        print(e)
 
 
 def copy_row(row: smartsheet.models.row) -> smartsheet.models.row:
