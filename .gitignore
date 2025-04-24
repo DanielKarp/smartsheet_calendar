@@ -1,13 +1,7 @@
 /venv/
 /.idea/
+/.mypy_cache/
+/__pycache__/
+/request_to_map/__pycache__/
 *.log
 *.pyc
-__pycache__/calendar_control.cpython-312.pyc
-__pycache__/combined_calendar.cpython-312.pyc
-__pycache__/intake_calendar.cpython-312.pyc
-__pycache__/map_calendar.cpython-312.pyc
-__pycache__/utils.cpython-312.pyc
-request_to_map/__pycache__/__init__.cpython-312.pyc
-request_to_map/__pycache__/colorize.cpython-312.pyc
-request_to_map/__pycache__/FY_Q_sort.cpython-312.pyc
-request_to_map/__pycache__/request_to_map_calendar.cpython-312.pyc
